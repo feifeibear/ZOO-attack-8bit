@@ -1,5 +1,6 @@
 ZOO: Zeroth Order Optimization based Black-box Attacks to Deep Neural Networks 
 =====================================
+This a modified version for ZOO attack with 8-bit quantized DNN models.
 
 ZOO is a **z**eroth **o**rder **o**ptimization based attack to attack deep
 neural networks (DNNs).  We propose an effective black-box attack that only
