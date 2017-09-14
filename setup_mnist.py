@@ -59,41 +59,66 @@ class MNIST:
         self.train_labels = train_labels[VALIDATION_SIZE:]
 
 
+
+class MNISTPrediction:
+  def __init__(self, sess, use_log = False):
+    self.sess = sess
+    self.use_log = use_log
+    self.img = tf.placeholder(tf.float32, (None, 28*28))
+    self.softmax_tensor = tf.import_graph_def(
+            sess.graph.as_graph_def(),
+            input_map={'Placeholder:0': tf.reshape(self.img,((-1, 784))), 'dropout/Placeholder:0':1.0},
+            return_elements=['fc3/add:0'])
+  def predict(self, dat):
+    dat = np.squeeze(dat)
+    # scaled = (0.5 + dat) * 255
+    # scaled = dat.reshape((1,) + dat.shape)
+    scaled = dat.reshape(-1, 28*28)
+    # print(scaled.shape)
+    predictions = self.sess.run(self.softmax_tensor,
+                         {self.img: scaled})
+    predictions = np.squeeze(predictions)
+    return predictions
+    # Creates node ID --> English string lookup.
+    node_lookup = NodeLookup()
+    top_k = predictions.argsort()#[-FLAGS.num_top_predictions:][::-1]
+    return top_k[-1]
+
+
+CREATED_GRAPH = False
 class MNISTModel:
-    def __init__(self, restore = None, session=None, use_log=False):
-        self.num_channels = 1
-        self.image_size = 28
-        self.num_labels = 10
+  def __init__(self, sess, use_log = False):
+    self.num_channels = 1
+    self.image_size = 28
+    self.num_labels = 10
+    global CREATED_GRAPH
+    self.sess = sess
+    self.use_log = use_log
+    if not CREATED_GRAPH:
+      create_graph()
+      CREATED_GRAPH = True
+    self.model = MNISTPrediction(sess, use_log)
 
-        model = Sequential()
+  def predict(self, img):
+    # scaled = (0.5+tf.reshape(img,((299,299,3))))*255
+    # scaled = (0.5+img)*255
+      # check if a shape has been specified explicitly
+    logit_tensor = tf.import_graph_def(
+      self.sess.graph.as_graph_def(),
+      input_map={'Placeholder:0': tf.reshape(img, (-1, 784)), 'dropout/Placeholder:0':1.0},
+      return_elements=['fc3/add:0'])
+    softmax_tensor = tf.nn.softmax(logit_tensor)
+    return softmax_tensor[0]
 
-        model.add(Conv2D(32, (3, 3),
-                         input_shape=(28, 28, 1)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(32, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        
-        model.add(Conv2D(64, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(Conv2D(64, (3, 3)))
-        model.add(Activation('relu'))
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        
-        model.add(Flatten())
-        model.add(Dense(200))
-        model.add(Activation('relu'))
-        model.add(Dense(200))
-        model.add(Activation('relu'))
-        model.add(Dense(10))
-        # output log probability, used for black-box attack
-        if use_log:
-            model.add(Activation('softmax'))
-        if restore:
-            model.load_weights(restore)
-
-        self.model = model
-
-    def predict(self, data):
-        return self.model(data)
+def create_graph():
+  """Creates a graph from saved GraphDef file and returns a saver."""
+  # Creates graph from saved graph_def.pb.
+  #with tf.gfile.FastGFile('/tmp/zoo/zoo_frozen.pb', 'rb') as f:
+  with tf.gfile.FastGFile('/tmp/zoo/zoo_frozen_8bit.pb', 'rb') as f:
+    graph_def = tf.GraphDef()
+    graph_def.ParseFromString(f.read())
+    #for line in repr(graph_def).split("\n"):
+    #  if "tensor_content" not in line:
+    #    print(line)
+    _ = tf.import_graph_def(graph_def, name='')
 

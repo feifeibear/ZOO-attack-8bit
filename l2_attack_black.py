@@ -326,7 +326,7 @@ class BlackBoxL2:
         self.grad = np.zeros(batch_size, dtype = np.float32)
         self.hess = np.zeros(batch_size, dtype = np.float32)
         # for testing
-        self.grad_op = tf.gradients(self.loss, self.modifier)
+        #self.grad_op = tf.gradients(self.loss, self.modifier)
         # compile numba function
         # self.coordinate_ADAM_numba = jit(coordinate_ADAM, nopython = True)
         # self.coordinate_ADAM_numba.recompile()

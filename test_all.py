@@ -93,7 +93,7 @@ def main(args):
         # load network
         print('Loading model', args['dataset'])
         if args['dataset'] == "mnist":
-            data, model =  MNIST(), MNISTModel("models/mnist", sess, use_log)
+            data, model =  MNIST(), MNISTModel(sess, use_log)
             # data, model =  MNIST(), MNISTModel("models/mnist-distilled-100", sess, use_log)
         elif args['dataset'] == "cifar10":
             data, model = CIFAR(), CIFARModel("models/cifar", sess, use_log)
